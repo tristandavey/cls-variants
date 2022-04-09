@@ -1,6 +1,6 @@
 {
   "name": "cls-variants",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": "git@github.com:tristandavey/cls-variants.git",
   "author": "Tristan Davey",
   "license": "MIT",
@@ -13,6 +13,7 @@
   "main": "./dist/cls-variants.cjs",
   "module": "./dist/cls-variants.module.js",
   "unpkg": "./dist/cls-variants.umd.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "microbundle",
     "dev": "microbundle watch",
