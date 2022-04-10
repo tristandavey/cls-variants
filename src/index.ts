@@ -21,17 +21,17 @@ type KeyOfOrBoolean<V> = keyof V extends "true" | "false" ? boolean : keyof V;
 
 type MappedVariants<T> = T extends object
   ? {
-      [K in keyof T]-?:
+      [K in keyof T]?:
         | (K extends "variants"
             ? {
-                [L in keyof T[K]]-?: KeyOfOrBoolean<T[K][L]>;
+                [L in keyof T[K]]?: KeyOfOrBoolean<T[K][L]>;
               }
-            : object)
+            : undefined)
         | MappedVariants<T[K]>;
     }[keyof T]
   : never;
 
-export type StyleArgs<T extends RootStyle> = Partial<MappedVariants<T>>;
+export type StyleArgs<T extends RootStyle> = MappedVariants<T>;
 
 function generateStyles<V extends RootStyle>(
   styles: V,
@@ -101,7 +101,7 @@ export function flattenStyles(...result: NestedStyle): string {
 export function createStyles<V extends RootStyle>(
   styles: V
 ): StyleFunc<StyleArgs<V>> {
-  return (args: StyleArgs<V> = {}, className?: string) => {
+  return (args: StyleArgs<V>, className?: string) => {
     return flattenStyles(generateStyles<any>(styles, args), className);
   };
 }
@@ -109,9 +109,7 @@ export function createStyles<V extends RootStyle>(
 type ValueOf<T> = T extends any[] ? T[number] : T[keyof T];
 type ExtractArgs<T extends StyleFunc<any>> = Parameters<T>[0];
 
-type MergeStylesArgs<T extends StyleFunc<any>[]> = Partial<
-  ExtractArgs<ValueOf<T>>
->;
+type MergeStylesArgs<T extends StyleFunc<any>[]> = ExtractArgs<ValueOf<T>>;
 
 /**
  * Merge several style functions into a single one

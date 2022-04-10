@@ -1,6 +1,6 @@
 {
   "name": "cls-variants",
-  "version": "1.0.2",
+  "version": "0.0.1",
   "repository": "git@github.com:tristandavey/cls-variants.git",
   "author": "Tristan Davey",
   "license": "MIT",
@@ -14,12 +14,19 @@
   "module": "./dist/cls-variants.module.js",
   "unpkg": "./dist/cls-variants.umd.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist/*.cjs",
+    "dist/*.js",
+    "dist/*.js.map",
+    "dist/*.d.ts"
+  ],
   "scripts": {
     "build": "microbundle",
     "dev": "microbundle watch",
     "test": "NODE_ENV=test jest --coverage",
     "test:no-coverage": "NODE_ENV=test jest",
-    "test:watch": "NODE_ENV=test jest --coverage --watch"
+    "test:watch": "NODE_ENV=test jest --coverage --watch",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
