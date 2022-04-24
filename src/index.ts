@@ -1,6 +1,7 @@
 export type Style = string | null | undefined;
 export type NestedStyle = Array<Style | NestedStyle>;
 export type GeneratedStyles<T extends string> = Record<T | "base", NestedStyle>;
+export type FlattenedStyles<T extends string> = Record<T | "className", string>;
 
 export type RootStyle<T> = (T extends string
   ? {
@@ -113,19 +114,19 @@ export function buildCreateStyles<T extends string>(fields: T[]) {
   return <S extends RootStyle<T>>(styles: S) =>
     (args?: MappedVariants<S>, className?: string) => {
       const results = { base: [] as NestedStyle } as GeneratedStyles<T>;
+      const flattened = { className: "" } as FlattenedStyles<T>;
 
       generateStyles(fields, styles, results, args);
 
       Object.keys(results).forEach((field) => {
-        results[field] = flattenStyles(
-          results[field],
-          field === "base" ? className : ""
-        );
+        if (field === "base") {
+          flattened.className = flattenStyles(results.base, className);
+        } else {
+          flattened[field] = flattenStyles(results[field]);
+        }
       });
 
-      const { base, ...rest } = results;
-
-      return { className: base, ...rest };
+      return flattened;
     };
 }
 
