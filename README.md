@@ -89,36 +89,46 @@ button({ style: 'solid', colour: 'red' });
 // button-style solid-style solid-red-style
 ```
 
-### Merging Styles
-Merging styles is done via the `mergeStyles` function. You can add additional variants or extend existing ones.
-```
-import { createStyles, mergeStyles } from 'cls-variants'; // or aliased as ms
+## Custom fields
+The existing `createStyles` is probably good enough for most scenarios, however you may want to add custom fields. For example maybe you want to create a creator function to handle transitions:
 
-const button = createStyles({
-  base: 'button-style'
+```
+import { buildCreateStyles } from 'cls-variants'; // or aliased as bcs
+
+const createTransitionStyles = buildCreateStyles([
+  "enter",
+  "enterFrom",
+  "enterTo",
+  "leave",
+  "leaveFrom",
+  "leaveTo",
+]);
+
+const transition = createTransitionStyles({
+  base: "base-style",
+  enterFrom: "opacity-0",
+  enterTo: "opacity-100",
   variants: {
-    size: {
-      small: 'small-style',
-      medium: 'medium-style'
-    }
-  }
+    colour: {
+      red: {
+        enterFrom: "bg-red-100",
+        enterTo: "bg-red-500",
+      },
+      green: {
+        enterFrom: "bg-green-100",
+        enterTo: "bg-green-500",
+      },
+    },
+  },
 });
 
-const jumboButton = mergeStyles(
-  button,
-  createStyles({
-    base: 'jumbo-button-style'
-    variants: {
-      size: {
-        jumbo: 'jumbo-style',
-      }
-    }
-  })
-);
+// { className: "base-style", enterFrom: "opacity-0 bg-red-100" }
+// transition({ "colour": "red" });
 
-jumboButton({ size: 'jumbo-style' });
-// button-style jumbo-button-style jumbo-style
+<Transition {...transition({ "colour": "red" })} />
+
 ```
+
 ## Utils
 The function for flattening and formatting styles is also exported for your own use:
 
