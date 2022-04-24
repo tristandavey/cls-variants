@@ -1,4 +1,4 @@
-import { flattenStyles, createStyles, mergeStyles } from "./cls-variants";
+import { flattenStyles, createStyles, buildCreateStyles } from "./";
 
 describe("flattenStyles", () => {
   it("handles styles", () => {
@@ -46,7 +46,7 @@ describe("createStyles", () => {
       base: "base-style",
     });
 
-    expect(style({}, "test")).toBe("base-style test");
+    expect(style(undefined, "test")).toBe("base-style test");
   });
 
   describe("handles variants", () => {
@@ -109,141 +109,49 @@ describe("createStyles", () => {
       );
     });
   });
-});
 
-describe("mergeStyles", () => {
-  it("merges base styles", () => {
-    const style1 = createStyles({
-      base: "base-style-1",
-    });
+  describe("buildCreateStyles", () => {
+    it("handles custom styles", () => {
+      const build = buildCreateStyles(["item"]);
 
-    const style2 = createStyles({
-      base: "base-style-2",
-    });
-
-    const merged = mergeStyles(style1, style2);
-
-    expect(merged({})).toBe("base-style-1 base-style-2");
-  });
-
-  it("handles passing class", () => {
-    const style1 = createStyles({
-      base: "base-style-1",
-    });
-
-    const style2 = createStyles({
-      base: "base-style-2",
-    });
-
-    const merged = mergeStyles(style1, style2);
-
-    expect(merged({}, "test")).toBe("base-style-1 base-style-2 test");
-  });
-
-  describe("handles variants", () => {
-    it("merges variant styles", () => {
-      const style1 = createStyles({
-        base: "base-style-1",
-        variants: {
-          foo: {
-            a: "base-foo-a",
-          },
-        },
-      });
-
-      const style2 = createStyles({
-        base: "base-style-2",
-        variants: {
-          bar: {
-            b: "base-bar-b",
-          },
-        },
-      });
-
-      const merged = mergeStyles(style1, style2);
-
-      expect(
-        merged({
-          foo: "a",
-          bar: "b",
-        })
-      ).toBe("base-style-1 base-foo-a base-style-2 base-bar-b");
-    });
-
-    it("merges variant styles with same keys", () => {
-      const style1 = createStyles({
-        base: "base-style-1",
-        variants: {
-          foo: {
-            a: "base-foo-a-1",
-            b: "base-foo-b-1",
-          },
-        },
-      });
-
-      const style2 = createStyles({
-        base: "base-style-2",
-        variants: {
-          foo: {
-            a: "base-foo-b-2",
-          },
-          bar: {
-            a: "base-bar-a-2",
-          },
-        },
-      });
-
-      const merged = mergeStyles(style1, style2);
-
-      expect(
-        merged({
-          foo: "a",
-        })
-      ).toBe("base-style-1 base-foo-a-1 base-style-2 base-foo-b-2");
-    });
-
-    it("merges deep variant styles", () => {
-      const style1 = createStyles({
+      const style = build({
         base: "base-style",
+        item: "base-item",
+      });
+
+      expect(style()).toStrictEqual({
+        className: "base-style",
+        item: "base-item",
+      });
+    });
+
+    it("handles deep custom styles", () => {
+      const build = buildCreateStyles(["item"]);
+
+      const style = build({
+        base: "base-style",
+        item: "base-item",
         variants: {
-          a: {
-            aFoo: "foo-style",
-            aBar: {
-              base: "bar-style",
+          foo: {
+            a: {
+              item: "base-item-a",
               variants: {
-                b: {
-                  bFoo: "foo-style",
-                  bBaz: "baz-style",
+                bar: {
+                  b: "bar",
                 },
               },
+            },
+            b: {
+              item: "base-item-b",
             },
           },
         },
       });
 
-      const style2 = createStyles({
-        base: "base-style-2",
-        variants: {
-          a: {
-            aFoo: "foo-style-2",
-            aBar: {
-              base: "bar-style-2",
-              variants: {
-                b: {
-                  bFoo: "foo-style-2",
-                  bBaz: "baz-style-2",
-                },
-              },
-            },
-          },
-        },
+      expect(style({ foo: "a", bar: "b" })).toStrictEqual({
+        className: "base-style bar",
+        item: "base-item base-item-a",
       });
-
-      const merged = mergeStyles(style1, style2);
-
-      expect(merged({ a: "aBar", b: "bBaz" })).toBe(
-        "base-style bar-style baz-style base-style-2 bar-style-2 baz-style-2"
-      );
     });
   });
 });

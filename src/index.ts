@@ -1,18 +1,27 @@
 export type Style = string | null | undefined;
 export type NestedStyle = Array<Style | NestedStyle>;
+export type GeneratedStyles<T extends string> = Record<T | "base", NestedStyle>;
 
-export type RootStyle = {
+export type RootStyle<T> = (T extends string
+  ? {
+      [K in T]?: string;
+    }
+  : {}) & {
   base?: string;
-  variants?: Record<string, StyleVariant>;
+  variants?: Record<string, StyleVariant<T>>;
 };
 
-export type StyleVariant = Record<
+export type StyleVariant<T> = Record<
   string,
   | Style
-  | {
+  | ((T extends string
+      ? {
+          [K in T]?: string;
+        }
+      : {}) & {
       base?: string;
-      variants: Record<string, StyleVariant>;
-    }
+      variants?: Record<string, StyleVariant<T>>;
+    })
 >;
 
 export type StyleFunc<T> = (args?: T, className?: string) => string;
@@ -31,17 +40,21 @@ type MappedVariants<T> = T extends object
     }[keyof T]
   : never;
 
-export type StyleArgs<T extends RootStyle> = MappedVariants<T>;
+function generateStyles<T extends string>(
+  fields: T[],
+  styles: RootStyle<T>,
+  results: GeneratedStyles<T>,
+  args?: MappedVariants<RootStyle<T>>
+): void {
+  ["base"].concat(fields).forEach((field) => {
+    if (!results[field]) {
+      results[field] = [];
+    }
 
-function generateStyles<V extends RootStyle>(
-  styles: V,
-  args?: StyleArgs<V>
-): NestedStyle {
-  const results: NestedStyle = [];
-
-  if (styles.base) {
-    results.push(styles.base);
-  }
+    if (styles[field]) {
+      results[field].push(styles[field]);
+    }
+  });
 
   if (styles.variants && args) {
     for (let variant in styles.variants) {
@@ -53,16 +66,14 @@ function generateStyles<V extends RootStyle>(
           const value = variantStyle[selectedStyle];
 
           if (typeof value === "string") {
-            results.push(value);
+            results.base.push(value);
           } else if (value.variants) {
-            results.push(generateStyles<any>(value, args));
+            generateStyles(fields, value, results, args);
           }
         }
       }
     }
   }
-
-  return results;
 }
 
 function nestedFlatten(result: NestedStyle, acc: string[]): string[] {
@@ -94,39 +105,41 @@ export function flattenStyles(...result: NestedStyle): string {
 }
 
 /**
- * Create a style function
+ * Create a style builder function
  * @param styles
  * @returns
  */
-export function createStyles<V extends RootStyle>(
-  styles: V
-): StyleFunc<StyleArgs<V>> {
-  return (args: StyleArgs<V>, className?: string) => {
-    return flattenStyles(generateStyles<any>(styles, args), className);
-  };
+export function buildCreateStyles<T extends string>(fields: T[]) {
+  return <S extends RootStyle<T>>(styles: S) =>
+    (args?: MappedVariants<S>, className?: string) => {
+      const results = { base: [] as NestedStyle } as GeneratedStyles<T>;
+
+      generateStyles(fields, styles, results, args);
+
+      Object.keys(results).forEach((field) => {
+        results[field] = flattenStyles(
+          results[field],
+          field === "base" ? className : ""
+        );
+      });
+
+      const { base, ...rest } = results;
+
+      return { className: base, ...rest };
+    };
 }
 
-type ValueOf<T> = T extends any[] ? T[number] : T[keyof T];
-type ExtractArgs<T extends StyleFunc<any>> = Parameters<T>[0];
-
-type MergeStylesArgs<T extends StyleFunc<any>[]> = ExtractArgs<ValueOf<T>>;
+const createStylesInternal = buildCreateStyles([]);
 
 /**
- * Merge several style functions into a single one
+ * Create styles
  * @param styles
  * @returns
  */
-export function mergeStyles<T extends StyleFunc<any>[]>(
-  ...styles: T
-): StyleFunc<MergeStylesArgs<T>> {
-  return (args: MergeStylesArgs<T> = {}, className?: string) => {
-    return flattenStyles(
-      ...styles.map((style) => {
-        return style(args);
-      }),
-      className
-    );
-  };
+export function createStyles<T>(styles: T) {
+  const func = createStylesInternal(styles);
+  return (args?: MappedVariants<T>, className?: string) =>
+    func(args, className).className;
 }
 
-export { createStyles as cs, mergeStyles as ms, flattenStyles as fs };
+export { buildCreateStyles as bcs, createStyles as cs, flattenStyles as fs };
